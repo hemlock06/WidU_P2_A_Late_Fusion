@@ -1,0 +1,46 @@
+# Archive
+_archive/
+
+# Data & weights (re-download if needed; not tracked in git)
+data/
+# src 아래 data 패키지는 추적 (위 data/ 패턴 예외)
+!src/p2fusion/data/
+weights/
+*.pt
+*.pth
+
+# Environment
+conda_envs/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyc
+*.egg-info/
+.ipynb_checkpoints/
+
+# Outputs & logs (generated during training; not tracked)
+outputs/
+checkpoints/
+*.ckpt
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+dist/
+build/
+
+# 로컬 작업 노트 (미추적)
+HANDOFF_*.md
+MASTER_DECISION_LOG.md
+
+# Results (png/npz는 선택적 추적)
+results/*.npz

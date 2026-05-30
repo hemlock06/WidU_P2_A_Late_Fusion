@@ -1,0 +1,43 @@
+# P2 데이터 소스 레지스트리
+# 2단계(현실화)에서 모달리티별 인코더 사전학습 + 클래스 사전분포 정합에 사용.
+# 라이선스 확인 후 다운로드. 대용량 주의(특히 PTT-PPG ~2.9GB).
+
+datasets:
+  ptt_ppg:
+    name: "Pulse Transit Time PPG Dataset"
+    source: PhysioNet
+    url: "https://physionet.org/content/pulse-transit-time-ppg/1.1.0/"
+    download: "https://physionet.org/files/pulse-transit-time-ppg/1.1.0/"
+    modalities: [ecg, imu_accel, imu_gyro, spo2, ppg, bp]
+    fs_hz: {ecg: 500, imu: 500, spo2: 500}
+    subjects: 22
+    labels: [sitting, walking, running]   # 응급 없음 — 클래스 0·1 앵커
+    p2_use: "정상(0)·운동(1) 분포 정합 + 동시수집 모달리티 상관 참조"
+    license: "ODbL v1.0"
+    size_gb: 2.9
+
+  sisfall:
+    name: "SisFall: Fall and Movement Dataset"
+    source: SISTEMIC (Univ. Antioquia)
+    url: "http://sistemic.udea.edu.co/en/research/projects/english-falls/"
+    download: "http://sistemic.udea.edu.co/wp-content/uploads/2018/04/SisFall_dataset.zip"
+    modalities: [imu_accel, imu_gyro]
+    fs_hz: {imu: 200}
+    subjects: 38                          # 23 청년 + 15 노인
+    labels: [adl_19, fall_15]             # 낙상 15종 + ADL 19종 — 클래스 3 앵커
+    p2_use: "외부충격(3) IMU 피처 분포 정합 + IMU 인코더 사전학습"
+    license: "research/academic"
+    size_gb: 0.4
+
+  harespod:
+    name: "High Altitude Respiration and SpO2 Dataset"
+    source: "Nature Scientific Data / Figshare"
+    url: "https://www.nature.com/articles/s41597-024-03988-5"
+    download: "https://figshare.com/articles/dataset/Harespod/"  # 정확 파일 URL은 페이지에서 확인
+    modalities: [spo2, hr, respiration, pulse]
+    fs_hz: {spo2: 100}
+    subjects: 15
+    labels: [induced_hypoxia]             # 저압산소챔버 유발 저산소 — 클래스 4 앵커
+    p2_use: "저산소(4) SpO2 동역학(desaturation 곡선) 분포 정합 + SpO2 인코더 사전학습"
+    license: "open (CC)"
+    size_gb: 0.3

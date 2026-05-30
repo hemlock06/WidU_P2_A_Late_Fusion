@@ -1,0 +1,128 @@
+# 연구계획서 (Research Plan) — Project 2
+
+> P1 레포: `https://github.com/hemlock06/WidU_P1_ECG-emergency-detection`
+> P1 완료일: 2026-05-29 | P2 데이터 전략 확정일: 2026-05-30
+
+---
+
+## 0. 비전 — P2의 역할
+
+P1(ECG)이 "심장 채널"을 담당한다면, P2는 **세 모달리티를 융합해 응급 원인을 판정**한다.
+
+**모달리티 책임 분리 원칙**: 각 모달리티는 자신이 1차 관측 가능한 것만 담당.
+
+| 응급 원인 | 1차 모달리티 | 담당 |
+|---|---|---|
+| 심혈관계 (AF·허혈 등) | ECG | P1 완료 |
+| 외부충격 (낙상·충돌) | **IMU (가속도 impact 1차 + 자이로 회전 보조)** | P2 |
+| 저산소 | SpO2 | P2 |
+| 운동/활동 vs 응급 구분 | IMU 활동량 + ECG(심박·리듬) | P2 융합 |
+
+> **모달리티 갱신 (2026-05-30)**: 기존 "자이로" → **IMU(가속도+자이로)**. 낙상·충격의 1차 신호는
+> 가속도 impact spike이며, 자이로(회전 각속도)는 보조다. 스마트폰은 둘 다 내장.
+
+---
+
+## 1. P2 입력 (P1 인터페이스 계약)
+
+```python
+P1_output = {
+    "cardiac_probs":   List[float],  # 길이 5 [NSR, AF, Ischemia, Conduction, Ectopic]
+    "emergency_score": float,        # 0~1 (AUROC=0.914)
+    "embedding":       List[float],  # 길이 768, ECG-FM mean-pool (raw, 비정규화)
+    "reliability":     float,        # 0~1, ECG 신호 신뢰도 (높을수록 불량)
+    "gate_tier":       str,          # "use" | "mask" | "alert"
+    "physio":          {"hr_bpm": float, "rhythm_regularity": float},
+    "model_version":   str,
+    "inference_ms":    float,
+}
+```
+
+---
+
+## 2. P2 출력 (5분류)
+
+| 클래스 | 설명 | 1차 모달리티 |
+|---|---|---|
+| 0 | 정상 (안정) | 전체 |
+| 1 | 정상 (운동/활동) | IMU 활동량 + ECG(심박) |
+| 2 | 심혈관계 응급 | ECG (P1) |
+| 3 | 외부충격 (낙상·충돌) | IMU (가속도 impact) |
+| 4 | 저산소 | SpO2 |
+
+---
+
+## 3. 데이터 전략 (✅ 확정 — 2026-05-30)
+
+### 3.1 핵심 사실 (검증됨)
+
+**세 모달리티(ECG+IMU+SpO2)를 동시 레코딩하고 5클래스 응급 레이블을 가진 공개 데이터셋은 존재하지 않는다.**
+
+조사 경과(상세는 `01_design_decisions.md §1`):
+- PTT-PPG (PhysioNet): ECG+IMU+SpO2 **동시** 수집 유일하나 응급 레이블 없음(정상/운동만).
+- SisFall: IMU(가속도+자이로) 200Hz·38명·낙상 15종 — SpO2·ECG 없음.
+- Harespod: 유발 저산소 SpO2/HR 100Hz·15명 — IMU·ECG 없음.
+- **SHIMMER (정밀 조사 후 기각)**: ECG·IMU가 **동시 수집이 아님**(별도 세션·별도 피험자),
+  IMU 51Hz(저해상도), 낙상 4명·매트리스, ECG 39레코드. → P2 부적합 결론.
+- MIMIC-IV-ECG-Ext-ICD: ECG+ED 응급 ICD 레이블 80만건 — IMU·SpO2 없음(P1이 이미 커버).
+
+### 3.2 핵심 통찰 — "데이터가 달라도 학습 가능한 범위"
+
+멀티모달 모델은 **(1) 모달리티별 인코더 + (2) 융합 헤드**로 나뉜다.
+
+- **(1) 인코더**: 각 모달리티를 **서로 다른 데이터셋**으로 독립 사전학습해도 무방.
+  (IMU←SisFall, SpO2←Harespod, ECG←P1)
+- **(2) 융합 헤드**: "세 모달리티가 **동시에** 이런 값일 때 → 클래스"를 배우려면
+  **한 샘플에 세 모달리티가 함께 있는 paired 샘플**이 필요. → 동시 데이터 부재가 병목.
+
+→ 해법: **클래스 조건부 조립(conditional independence 가정)**.
+클래스를 알면 각 모달리티는 근사적으로 독립이라고 보고, 각 모달리티를 자기 클래스 분포에서
+독립 추출해 **가짜 paired 샘플**을 조립한다. 실데이터를 재료로 쓰되 조합만 합성 → 순수
+시뮬레이션보다 현실적. (한계: 모달리티 간 미세 상관 소실 → 방법 B로 보강)
+
+### 3.3 채택 전략 — 4단 레시피
+
+| 방법 | 역할 | 적용 |
+|---|---|---|
+| **A. 클래스 조건부 조립** | paired 융합 학습 데이터 생성 (핵심) | 실데이터 분포에서 모달리티별 독립 추출 후 조립 |
+| **B. 시뮬레이터** | 모달리티 간 상관·동역학 보강 | 혼동쌍(운동vs낙상, 운동vs심혈관) 분리 검증 |
+| **C. modality-dropout 학습** | 결측 강건성 | 학습 중 모달리티 랜덤 마스킹 |
+| (인코더 사전학습) | 실데이터 표현 학습 | IMU←SisFall, SpO2←Harespod |
+
+### 3.4 2단계 로드맵
+
+- **1단계 (빠른 검증, ~1주)**: 방법 A를 **문헌 수치로 캘리브레이션한 클래스 사전분포**로 가동
+  (다운로드 없이 end-to-end 파이프라인 검증) → 실데이터(SisFall/Harespod) 통계로 사전분포 정합.
+- **2단계 (현실화, 2~3주)**: 인코더 실데이터 사전학습 + 방법 C(modality-dropout) late fusion.
+
+---
+
+## 4. 아키텍처 (✅ 권장안 확정 — Gated Late Fusion)
+
+```
+[ECG]  P1_output ──► ECG 투영(768→128) × reliability 게이트 ┐
+[IMU]  raw/feat ───► IMU 인코더(→128)                       ├─► 게이팅 네트워크
+[SpO2] feat ───────► SpO2 인코더(→32→128)                   │   (reliability + 모달리티 가용성)
+                                                            │        │ w_m
+                                                            └────────► 가중합 fusion ─► MLP ─► 5분류
+                       (각 모달리티 unimodal logits 보조손실)
+```
+
+- **권장**: Gated Late Fusion (메인) / Concat MLP (베이스라인) / Cross-modal Attention (상위 비교군)
+- **근거**: 결측 강건성(late fusion), P1 `reliability`/`gate_tier` 자연 결합, 데이터 효율, 해석성(P3 연결)
+- `gate_tier`: mask→ECG 결측 처리, alert→응급 우선 라우팅, use→정상 가중
+- 파라미터 ~0.3–1M, RTX 3060 12GB 여유
+
+---
+
+## 5. 단계 계획
+
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| Pre-flight | 데이터 전략 확정 | ✅ 완료 (2026-05-30) |
+| 1 | src 구조 + 피처 스키마 + 클래스 조건부 조립기 (방법 A) | 🔄 진행 중 |
+| 2 | 실데이터 다운로드(SisFall/Harespod/PTT-PPG) + 분포 정합 | 미시작 |
+| 3 | 융합 모델 (concat 베이스라인 → gated) + 학습 파이프라인 | 미시작 |
+| 4 | 평가 (macro-F1, per-class recall, 혼동쌍, 결측 강건성 곡선) | 미시작 |
+| 5 | 인코더 사전학습 + modality-dropout (2단계 현실화) | 미시작 |
+| 6 | P2→P3 인터페이스 명세 | 미시작 |
