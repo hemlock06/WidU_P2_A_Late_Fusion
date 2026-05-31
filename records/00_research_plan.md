@@ -1,6 +1,6 @@
 # 연구계획서 (Research Plan) — Project 2
 
-> P1 레포: `https://github.com/hemlock06/WidU_P1_ECG-emergency-detection`
+> P1 레포: `https://github.com/hemlock06/WidU_P1_LoRA-PEFT_Foundation-Model_Adaptation`
 > P1 완료일: 2026-05-29 | P2 데이터 전략 확정일: 2026-05-30
 
 ---

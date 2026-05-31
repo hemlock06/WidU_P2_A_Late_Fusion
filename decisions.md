@@ -2,7 +2,7 @@
 
 > GitHub: `WidU_P2_A_Late_Fusion`
 > 데이터·출력은 환경변수 `P2_DATA_DIR`(기본 `data/`)로 지정 — 대용량이라 미추적.
-> 관련: `WidU_P1_ECG-emergency-detection`
+> 관련: `WidU_P1_LoRA-PEFT_Foundation-Model_Adaptation`
 >
 > **상태**: late fusion 접근의 설계·검증·한계 규명을 마치고 보존한다. 교차모달 상호작용 학습은
 > 후속 트랙(cross-modal attention, `WidU_P2_B_Cross_Modal_Attention`)과 실데이터 검증·통합으로
