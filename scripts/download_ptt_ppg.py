@@ -3,7 +3,7 @@
 22명 × {sit, walk, run} = 66 레코드, 각 .hea + .dat
 총 약 2.9GB — IMU(가속도+자이로) + SpO2 + ECG + PPG 동시 수록
 
-출력: D:/WidU_multimodal_fusion/raw/ptt_ppg/
+출력: data/raw/ptt_ppg/
 """
 import os
 import sys
@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://physionet.org/files/pulse-transit-time-ppg/1.1.0/"
-OUT_DIR  = Path(r"D:\WidU_multimodal_fusion\raw\ptt_ppg")
+OUT_DIR  = Path(r"data/raw/ptt_ppg")
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 

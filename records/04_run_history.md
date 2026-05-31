@@ -8,7 +8,7 @@
 
 | 항목 | 사양 |
 |---|---|
-| Python | 3.9 (D:\conda_envs\py39\python.exe) |
+| Python | 3.9 (python) |
 | PyTorch | 2.1.2+cu118 |
 | CUDA | 11.8 |
 | GPU | NVIDIA RTX 3060 12GB |
@@ -24,7 +24,7 @@
 - `src/p2fusion/synth/assembler.py` — 조건부 독립 조립 + 측정노이즈(0.35×std) + hard case(12%)
 - `scripts/build_synthetic_dataset.py` — train/val/test npz 생성
 
-**산출물**: `D:/WidU_multimodal_fusion/synthetic/p2_synth_v1_{train,val,test}.npz`
+**산출물**: `data/synthetic/p2_synth_v1_{train,val,test}.npz`
 - train 14000 / val 3000 / test 3000, 5클래스 균형, seed=42
 
 **분리도 sanity (선형/RF, 임베딩 제외 피처만)**

@@ -17,7 +17,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion"))
+DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "data"))
 
 SOURCES = {
     "sisfall": {

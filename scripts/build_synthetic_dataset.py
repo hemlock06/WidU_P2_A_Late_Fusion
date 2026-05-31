@@ -26,7 +26,7 @@ from p2fusion.schema import CLASS_NAMES, NUM_CLASSES  # noqa: E402
 from p2fusion.synth.assembler import (ConditionalAssembler, P1Cache,  # noqa: E402
                                       samples_to_arrays)
 
-DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion"))
+DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "data"))
 
 
 def make_cache(splits):

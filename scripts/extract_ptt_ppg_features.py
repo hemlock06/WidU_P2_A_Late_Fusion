@@ -17,7 +17,7 @@ PTT-PPG (PhysioNet pulse-transit-time-ppg v1.1.0):
   python scripts/extract_ptt_ppg_features.py
 
 출력:
-  D:/WidU_multimodal_fusion/interim/ptt_ppg_features.npz
+  data/interim/ptt_ppg_features.npz
   키: imu_feat[N,12], spo2_feat[N,8], label[N], subject[N], activity[N]
 """
 from __future__ import annotations
@@ -37,8 +37,8 @@ try:
 except Exception:
     pass
 
-DATA_DIR = Path(r"D:\WidU_multimodal_fusion\raw\ptt_ppg")
-OUT_DIR  = Path(r"D:\WidU_multimodal_fusion\interim")
+DATA_DIR = Path(r"data/raw/ptt_ppg")
+OUT_DIR  = Path(r"data/interim")
 FS       = 500.0   # Hz
 
 # 활동 → P2 클래스

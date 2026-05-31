@@ -4,7 +4,7 @@
   ◆ 연구용: 라우팅(게이트) + 내부피처(IG/P1) + 기여 분해
   ◆ 보호자용: 기술 피처를 일상 언어 알림으로 번역
 
-사용: D:/conda_envs/py39/python.exe scripts/demo_xai.py
+사용: python scripts/demo_xai.py
 """
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ from p2fusion.models.gated_fusion import GatedFusionModel
 from p2fusion.xai import (collect_gate, generate_combined_explanation,
                           generate_caregiver_message)
 
-CKPT  = r"D:/WidU_multimodal_fusion/checkpoints/p2_gated_11882/best_model.pt"
-DATA  = r"D:/WidU_multimodal_fusion/synthetic/p2_synth_v1_test.npz"
+CKPT  = r"data/checkpoints/p2_gated_11882/best_model.pt"
+DATA  = r"data/synthetic/p2_synth_v1_test.npz"
 CLASS = ["정상안정", "정상활동", "심혈관", "낙상", "저산소"]
 EXPECTED_MOD = {2: 0, 3: 1, 4: 2}   # 심혈관→ECG, 낙상→IMU, 저산소→SpO2
 

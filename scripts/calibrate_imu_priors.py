@@ -32,9 +32,9 @@ try:
 except Exception:
     pass
 
-PTT_DIR  = Path(r"D:\WidU_multimodal_fusion\raw\ptt_ppg")
-SISFALL  = Path(r"D:\WidU_multimodal_fusion\interim\sisfall_imu_features.npz")
-OUT      = Path(r"D:\WidU_multimodal_fusion\interim\imu_calibration.npz")
+PTT_DIR  = Path(r"data/raw/ptt_ppg")
+SISFALL  = Path(r"data/interim/sisfall_imu_features.npz")
+OUT      = Path(r"data/interim/imu_calibration.npz")
 
 FS_TARGET = 200.0
 WIN_SEC   = 3.0

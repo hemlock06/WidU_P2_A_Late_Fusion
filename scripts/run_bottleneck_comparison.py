@@ -30,7 +30,7 @@ from p2fusion.data.dataset import P2Dataset
 from p2fusion.models.gated_fusion import GatedFusionModel
 from p2fusion.schema import CLASS_NAMES, NUM_CLASSES
 
-DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion")) / "synthetic"
+DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "data")) / "synthetic"
 DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

@@ -7,7 +7,7 @@
     # GatedFusion 메인 (기본)
     python scripts/train_fusion.py --model gated --epochs 80
 
-출력: D:/WidU_multimodal_fusion/checkpoints/p2_{model}_{run_id}/
+출력: data/checkpoints/p2_{model}_{run_id}/
       best_model.pt  (val macro-F1 기준)
       last_model.pt
       train_log.csv
@@ -36,8 +36,8 @@ from p2fusion.models.gated_fusion import GatedFusionModel
 from p2fusion.models.cross_modal_attention import CrossModalAttentionFusion
 from p2fusion.schema import CLASS_NAMES, NUM_CLASSES
 
-DATA_DIR  = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion")) / "synthetic"
-CKPT_ROOT = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion")) / "checkpoints"
+DATA_DIR  = Path(os.environ.get("P2_DATA_DIR", "data")) / "synthetic"
+CKPT_ROOT = Path(os.environ.get("P2_DATA_DIR", "data")) / "checkpoints"
 DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

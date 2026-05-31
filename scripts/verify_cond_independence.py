@@ -28,8 +28,8 @@ try:
 except Exception:
     pass
 
-INTERIM_DIR = Path(r"D:\WidU_multimodal_fusion\interim")
-SYNTH_DIR   = Path(r"D:\WidU_multimodal_fusion\synthetic")
+INTERIM_DIR = Path(r"data/interim")
+SYNTH_DIR   = Path(r"data/synthetic")
 
 from p2fusion.schema import IMU_FEATURES, CLASS_NAMES
 
@@ -113,7 +113,7 @@ def main():
 
     # PTT-PPG에서 HR 채널 확인
     import wfdb
-    DATA_DIR = Path(r"D:\WidU_multimodal_fusion\raw\ptt_ppg")
+    DATA_DIR = Path(r"data/raw/ptt_ppg")
     hea_files = sorted(DATA_DIR.glob("*.hea"))[:5]  # 샘플 5개만 확인
     print("\n  HR 채널 탐색 (샘플 레코드):")
     hr_vals, smv_std_vals, labels_hr = [], [], []

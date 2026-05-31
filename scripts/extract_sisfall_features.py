@@ -15,10 +15,10 @@ SisFall 파일 포맷:
 
 사용:
   python scripts/extract_sisfall_features.py
-  python scripts/extract_sisfall_features.py --data-dir D:/WidU_multimodal_fusion/raw/sisfall
+  python scripts/extract_sisfall_features.py --data-dir data/raw/sisfall
 
 출력:
-  D:/WidU_multimodal_fusion/interim/sisfall_imu_features.npz
+  data/interim/sisfall_imu_features.npz
   키: feat[N,12], label[N] (3=낙상, 1=ADL), fname[N]
 """
 from __future__ import annotations
@@ -37,8 +37,8 @@ try:
 except Exception:
     pass
 
-DATA_DIR  = Path(r"D:\WidU_multimodal_fusion\raw\sisfall")
-OUT_DIR   = Path(r"D:\WidU_multimodal_fusion\interim")
+DATA_DIR  = Path(r"data/raw/sisfall")
+OUT_DIR   = Path(r"data/interim")
 FS        = 200.0   # Hz
 
 # SisFall 가속도 단위 변환 (ADXL345 ±16g 모드: 512 LSB/g)

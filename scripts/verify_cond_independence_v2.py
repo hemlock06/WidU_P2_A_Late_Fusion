@@ -24,9 +24,9 @@ try:
 except Exception:
     pass
 
-INTERIM_DIR = Path(r"D:\WidU_multimodal_fusion\interim")
-SYNTH_DIR   = Path(r"D:\WidU_multimodal_fusion\synthetic")
-PTT_DIR     = Path(r"D:\WidU_multimodal_fusion\raw\ptt_ppg")
+INTERIM_DIR = Path(r"data/interim")
+SYNTH_DIR   = Path(r"data/synthetic")
+PTT_DIR     = Path(r"data/raw/ptt_ppg")
 
 from p2fusion.schema import IMU_FEATURES
 

@@ -6,7 +6,7 @@
   3. gate_weights 분포 (GatedFusionModel 전용)
 
 사용:
-    python scripts/analyze_confusion.py --ckpt D:/WidU_multimodal_fusion/checkpoints/p2_best/best_model.pt
+    python scripts/analyze_confusion.py --ckpt data/checkpoints/p2_best/best_model.pt
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from p2fusion.models.concat_mlp import ConcatMLP
 from p2fusion.models.gated_fusion import GatedFusionModel
 from p2fusion.schema import CLASS_NAMES, NUM_CLASSES
 
-DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "D:/WidU_multimodal_fusion")) / "synthetic"
+DATA_DIR = Path(os.environ.get("P2_DATA_DIR", "data")) / "synthetic"
 DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 설계 의도 혼동쌍 (P2 §8.5)

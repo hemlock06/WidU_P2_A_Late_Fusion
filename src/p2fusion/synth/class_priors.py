@@ -172,7 +172,7 @@ def sample_feature_vector(rng: np.random.Generator, priors: Dict[str, Spec],
 # ---------------------------------------------------------------------------
 
 _MVN_CACHE: Dict[int, tuple] = {}   # cls → (mu, L_chol, lo, hi)
-_CALIB_PATH = r"D:\WidU_multimodal_fusion\interim\imu_calibration.npz"
+_CALIB_PATH = r"data/interim/imu_calibration.npz"
 _MVN_CLASSES = (0, 1, 3)   # 실데이터 공분산 보존 대상
 
 

@@ -22,7 +22,7 @@ from p2fusion.schema import (EMB_DIM, IMU_FEATURES, MultimodalSample,
                              NUM_CLASSES, SPO2_FEATURES)
 from p2fusion.synth import class_priors as cp
 
-P1_CACHE_DIR = Path(r"D:\WidU_multimodal_fusion\p1_cache")
+P1_CACHE_DIR = Path(r"data/p1_cache")
 
 # 클래스별 ECG P1 캐시 소스 매핑
 #   키: P2 클래스, 값: cpsc_mc label_mc 값 목록

@@ -6,7 +6,7 @@ P1이 ECG 인코더이므로, P2의 ECG 채널은 P1 출력을 그대로 쓴다.
 사용:
     python scripts/build_p1_cache.py
 
-출력: D:/WidU_multimodal_fusion/p1_cache/cpsc_mc_{train,val,test}.npz
+출력: data/p1_cache/cpsc_mc_{train,val,test}.npz
 저장 키:
     embedding        [N, 768]  ECG-FM mean-pool (raw)
     cardiac_probs    [N, 5]    softmax 심장 5분류
@@ -32,11 +32,11 @@ from scipy.signal import find_peaks
 from torch.utils.data import DataLoader, Dataset
 
 # ── 경로 설정 ────────────────────────────────────────────────────────────────
-CKPT_FM   = r"D:\WidU_ecg-fm_emergency-detection\checkpoints\ecg-fm\mimic_iv_ecg_physionet_pretrained.pt"
-CKPT_P1   = r"D:\WidU_ecg-fm_emergency-detection\outputs\lora_multitask_snr_a07\lora_multitask_snr_best.pt"
-CKPT_GATE = r"D:\WidU_ecg-fm_emergency-detection\outputs\gate\gate_best.pt"
-DATA_DIR  = r"D:\WidU_ecg-fm_emergency-detection\data\processed\cpsc2018_mc"
-OUT_DIR   = r"D:\WidU_multimodal_fusion\p1_cache"
+CKPT_FM   = r"../WidU_ecg-fm_emergency-detection/checkpoints/ecg-fm/mimic_iv_ecg_physionet_pretrained.pt"
+CKPT_P1   = r"../WidU_ecg-fm_emergency-detection/outputs/lora_multitask_snr_a07/lora_multitask_snr_best.pt"
+CKPT_GATE = r"../WidU_ecg-fm_emergency-detection/outputs/gate/gate_best.pt"
+DATA_DIR  = r"../WidU_ecg-fm_emergency-detection/data/processed/cpsc2018_mc"
+OUT_DIR   = r"data/p1_cache"
 
 # P1 게이트 임계값 (records/03_eval_results.md 확정값)
 T_MASK  = 0.2155

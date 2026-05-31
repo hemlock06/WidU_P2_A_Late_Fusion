@@ -21,8 +21,8 @@ try:
 except Exception:
     pass
 
-CACHE = Path(r"D:\WidU_multimodal_fusion\p1_cache\ptt_ppg_p1.npz")
-SPLIT = Path(r"D:\WidU_multimodal_fusion\interim\ptt_subject_split.json")
+CACHE = Path(r"data/p1_cache/ptt_ppg_p1.npz")
+SPLIT = Path(r"data/interim/ptt_subject_split.json")
 OUT   = Path(__file__).resolve().parents[1] / "results" / "ptt_activity_rule_baseline.json"
 
 ACT2LAB = {"sit": 0, "walk": 1, "run": 2}
