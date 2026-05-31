@@ -1,0 +1,39 @@
+{
+  "task": "ptt_ppg sit/walk/run 3-class — IMU threshold rule baseline (learning-0)",
+  "feature": "smv_std",
+  "thresholds": {
+    "theta1": 0.014224530122546583,
+    "theta2": 0.10573901143971454
+  },
+  "train_macro_f1": 0.86218357252546,
+  "test_macro_f1": 0.9642743221690591,
+  "confusion_matrix": [
+    [
+      112,
+      0,
+      0
+    ],
+    [
+      0,
+      104,
+      8
+    ],
+    [
+      0,
+      4,
+      108
+    ]
+  ],
+  "labels": [
+    "sit",
+    "walk",
+    "run"
+  ],
+  "split_seed": 42,
+  "compare_learned_imu_only": {
+    "concat": 0.925,
+    "gated": 0.896,
+    "cross_attn": 0.916
+  },
+  "note": "응급 판정 룰과 무관·활동분류 전용. 학습형 융합과 동일 분할 정본 사용."
+}
