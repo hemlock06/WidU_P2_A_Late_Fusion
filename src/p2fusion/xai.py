@@ -18,6 +18,8 @@ from typing import Dict
 import numpy as np
 import torch
 
+from p2fusion.schema import IMU_FEATURES, SPO2_FEATURES
+
 MOD = ["ECG", "IMU", "SpO2"]
 _CLASS_KO = ["정상(안정)", "정상(활동)", "심혈관 응급", "낙상·충격", "저산소"]
 _CLASS_PRIMARY_MOD = [None, "IMU", "ECG", "IMU", "SpO2"]
@@ -108,3 +110,132 @@ def gate_report(model, arrays_by_group: Dict[str, Dict[str, np.ndarray]], device
         title = f"[{name}] n={len(pr)}  pred 분포={dist}"
         blocks.append(format_gate(gw, cf, title))
     return "\n\n".join(blocks)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Post-hoc XAI — Integrated Gradients (피처별 기여, 모달 내부까지)
+# ═══════════════════════════════════════════════════════════════════════════
+# 내재적 게이트 XAI = "어느 모달"까지(내부 가중치 읽기). IG = "어느 피처가 얼마나"까지를
+# 그래디언트 적분으로 별도 계산(읽기 아님). 완결성 공리: Σattr ≈ F_t(x) − F_t(baseline).
+# 주의: conf_routed 게이트는 conf가 detach라 게이트 경로는 미분 안 됨 → IG는 expert 경로
+#       민감도를 귀속(게이트 라우팅 기여는 별도 게이트 XAI가 설명). 완결성 갭은 이 때문.
+
+_AUX_NAMES = ["p_nsr", "p_af", "p_isch", "p_cond", "p_ecto",
+              "emergency_score", "reliability", "gate_tier", "hr_bpm", "rhythm_reg"]
+_IG_KEYS = ["ecg_emb", "ecg_aux", "imu", "spo2"]
+
+
+def integrated_gradients(model, sample: Dict[str, np.ndarray], target: int, device,
+                         steps: int = 64, baseline=None) -> Dict[str, np.ndarray]:
+    """단일 샘플 IG 귀속 → {key: attr[dim]}.
+
+    sample: {ecg_emb[768]·ecg_aux[10]·imu[12]·spo2[8]·mask[3]}. baseline=None → 0 기준.
+    """
+    model.eval()
+    x = {k: torch.as_tensor(sample[k], dtype=torch.float32, device=device) for k in _IG_KEYS}
+    mask = torch.as_tensor(sample["mask"], dtype=torch.float32, device=device).unsqueeze(0)
+    base = ({k: torch.zeros_like(x[k]) for k in _IG_KEYS} if baseline is None
+            else {k: torch.as_tensor(baseline[k], dtype=torch.float32, device=device) for k in _IG_KEYS})
+
+    grads = {k: torch.zeros_like(x[k]) for k in _IG_KEYS}
+    for s in range(1, steps + 1):
+        alpha = s / steps
+        xi = {k: (base[k] + alpha * (x[k] - base[k])).detach().requires_grad_(True) for k in _IG_KEYS}
+        out = model({**{k: xi[k].unsqueeze(0) for k in _IG_KEYS}, "mask": mask})
+        logit = out["logits"][0, target]
+        # allow_unused: 일부 변형(예: conf_routed+feature)은 ecg_aux 미사용 → grad None
+        g = torch.autograd.grad(logit, [xi[k] for k in _IG_KEYS], allow_unused=True)
+        for k, gk in zip(_IG_KEYS, g):
+            if gk is not None:
+                grads[k] = grads[k] + gk.detach()
+    return {k: ((x[k] - base[k]) * grads[k] / steps).cpu().numpy() for k in _IG_KEYS}
+
+
+def aggregate_attribution(attr: Dict[str, np.ndarray]):
+    """IG attr → (모달별 총기여, 모달내 명명 피처 정렬)."""
+    per_mod = {
+        "ECG":  float(attr["ecg_emb"].sum() + attr["ecg_aux"].sum()),
+        "IMU":  float(attr["imu"].sum()),
+        "SpO2": float(attr["spo2"].sum()),
+    }
+    feats = {
+        "IMU":     sorted(zip(IMU_FEATURES, attr["imu"].tolist()),  key=lambda t: -abs(t[1])),
+        "SpO2":    sorted(zip(SPO2_FEATURES, attr["spo2"].tolist()), key=lambda t: -abs(t[1])),
+        "ECG_aux": sorted(zip(_AUX_NAMES, attr["ecg_aux"].tolist()), key=lambda t: -abs(t[1])),
+        "ECG_emb": float(attr["ecg_emb"].sum()),
+    }
+    return per_mod, feats
+
+
+def generate_ig_explanation(pred_class: int, attr: Dict[str, np.ndarray], topk: int = 3) -> str:
+    """IG 피처 귀속 자연어 — 모달 기여 + 주도 모달 상위 피처."""
+    per_mod, feats = aggregate_attribution(attr)
+    denom = sum(abs(v) for v in per_mod.values()) + 1e-8
+    lines = [f"[판정] {_CLASS_KO[pred_class]}  (post-hoc IG)"]
+    lines.append("[모달 기여] " + "  ".join(
+        f"{m} {per_mod[m]:+.2f}({abs(per_mod[m]) / denom:.0%})" for m in ("ECG", "IMU", "SpO2")))
+    dom = max(per_mod, key=lambda m: abs(per_mod[m]))
+    top = feats["ECG_aux" if dom == "ECG" else dom][:topk]
+    lines.append(f"  → {dom} 주도. 상위 피처: " + ", ".join(f"{n} {v:+.2f}" for n, v in top))
+    if dom == "ECG":
+        lines[-1] += f"  (ECG 임베딩 총 {feats['ECG_emb']:+.2f})"
+    return "\n".join(lines)
+
+
+def ig_completeness(model, sample, target, device, attr):
+    """완결성 검증 → (Σattr, F_t(x)−F_t(base))."""
+    model.eval()
+    with torch.no_grad():
+        def fwd(src):
+            b = {**{k: torch.as_tensor(src[k], dtype=torch.float32, device=device).unsqueeze(0)
+                    for k in _IG_KEYS},
+                 "mask": torch.as_tensor(sample["mask"], dtype=torch.float32, device=device).unsqueeze(0)}
+            return float(model(b)["logits"][0, target])
+        gap = fwd(sample) - fwd({k: np.zeros_like(sample[k]) for k in _IG_KEYS})
+    return float(sum(a.sum() for a in attr.values())), gap
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 상보 결합 — 게이트(라우팅) + IG(IMU·SpO2 피처) + P1 판독(ECG 임상층)
+# ═══════════════════════════════════════════════════════════════════════════
+# ECG 768 임베딩은 불투명 → P1 cardiac_probs(NSR/AF/허혈/전도/이소성)가 ECG의 해석층.
+# 즉 IMU/SpO2 = IG 핸드크래프트 피처, ECG = P1 임상 확률. 계층적 XAI.
+
+_CARDIAC_KO = ["정상리듬(NSR)", "심방세동(AF)", "급성 허혈", "전도 장애", "이소성"]
+
+
+def generate_combined_explanation(model, sample: Dict[str, np.ndarray], device,
+                                  steps: int = 64) -> str:
+    """게이트 라우팅 + IG 피처 + P1 ECG 판독을 한 설명으로 결합 + 기여 분해."""
+    # 1. 게이트 XAI (단일 샘플)
+    one = {k: np.asarray(sample[k])[None] for k in ("ecg_emb", "ecg_aux", "imu", "spo2", "mask")}
+    gw, cf, ul, pr = collect_gate(model, one, device)
+    pred, gate_w, conf = int(pr[0]), gw[0], cf[0]
+
+    # 2. IG (피처 귀속) + 완결성
+    attr = integrated_gradients(model, sample, pred, device, steps)
+    _, feats = aggregate_attribution(attr)
+    tot, gap = ig_completeness(model, sample, pred, device, attr)
+
+    # 3. P1 ECG 임상 판독 (해석층 — 임베딩 대신 확률)
+    aux = np.asarray(sample["ecg_aux"])
+    ci = int(np.argmax(aux[0:5]))
+    es, rel = float(aux[5]), float(aux[6])
+
+    dom = int(np.argmax(gate_w))
+    lines = [f"[판정] {_CLASS_KO[pred]}"]
+    others = "  ".join(f"{MOD[i]} {gate_w[i]:.0%}" for i in range(3) if i != dom)
+    lines.append(f"─ 라우팅(게이트): {MOD[dom]} 주도 {gate_w[dom]:.0%} (확신 {conf[dom]:.0%}) | {others}")
+
+    # 주도 모달 내부 — IMU/SpO2는 IG, ECG는 P1 판독
+    if dom == 0:
+        lines.append(f"─ ECG 내부(P1 임상): {_CARDIAC_KO[ci]} {aux[ci]:.0%}, 응급 {es:.2f}, 신뢰도 {rel:.2f}")
+    else:
+        mn = MOD[dom]
+        top = feats[mn][:3]
+        lines.append(f"─ {mn} 내부(IG): " + ", ".join(f"{n} {v:+.2f}" for n, v in top))
+        lines.append(f"─ ECG 판독(P1, 참고): {_CARDIAC_KO[ci]} {aux[ci]:.0%} (응급 {es:.2f}) — 게이트 {gate_w[0]:.0%}")
+
+    # 기여 분해: 피처(IG) + 라우팅(게이트) = 전체 결정
+    lines.append(f"─ 기여 분해: 피처(IG) {tot:+.2f} + 라우팅(게이트) {gap - tot:+.2f} = 결정 {gap:+.2f}")
+    return "\n".join(lines)
